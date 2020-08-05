@@ -33,12 +33,12 @@ from .markdown import Image, Markdown
 
 # regex patterns for parsing quiz content
 start_patterns = {
-    'question': r'\d+\.',
+    'question': r'Q\.',
     'mctf_correct_choice': r'\*[a-zA-Z]\)',
     'mctf_incorrect_choice': r'[a-zA-Z]\)',
     'multans_correct_choice': r'\[\*\]',
     'multans_incorrect_choice': r'\[ ?\]',
-    'shortans_correct_choice': r'\*',
+    'shortans_correct_choice': r'<>',
     'feedback': r'\.\.\.',
     'correct_feedback': r'\+',
     'incorrect_feedback': r'~',
@@ -61,7 +61,6 @@ start_patterns = {
     'quiz_show_correct_answers': r'[Ss]how correct answers:',
     'quiz_one_question_at_a_time': r'[Oo]ne question at a time:',
     'quiz_cant_go_back': r'''[Cc]an't go back:''',
-    'fimb_ans': r'<>',
     'muldropd_correct_choice':r'\{\*\}',
     'muldropd_incorrect_choice':r'\{ ?\}',
 
@@ -392,7 +391,7 @@ class Question(object):
         if any(x is not None for x in (self.correct_feedback_raw, self.incorrect_feedback_raw)):
             raise Text2qtiError(f'Question type "{self.type}" does not support correct/incorrect feedback')
 
-    def append_fimb_ans(self, text: str):
+    def append_fimb_ans(self, text: str, ref_word:str):
         if self.type is None:
             self.type = 'fill_in_multiple_blanks_question'
             if self.choices:
@@ -400,20 +399,7 @@ class Question(object):
         elif self.type != 'fill_in_multiple_blanks_question':
             raise Text2qtiError(f'Question type "{self.type}" does not support short answer')
 
-        ref_word_match = reference_word_re.match(text)
-        if ref_word_match is None:
-        # for using (( )) to mark reference words
-        #    raise Text2qtiError(f'The answer of fill_in_multiple_blanks question must has reference word surronded by (( ))')
-        #if len(ref_word_match.group(0)) <= 4 : # if reference word is empty: []
-            raise Text2qtiError(f'The answer of fill_in_multiple_blanks question must has reference word surronded by [ ]')
-        if len(ref_word_match.group(0)) <= 2 : # if reference word is empty: []
-            raise Text2qtiError(f'Reference word cannot be empty in answer of fill_in_multiple_blanks question')
-        # for using (( )) to mark reference words
-        # ref_word_str = ref_word_match.group(0).lstrip('(').rstrip(')')
-        # for using [ ] to mark reference words
-        ref_word_str = ref_word_match.group(0).lstrip('[').rstrip(']')
-        text = text[ref_word_match.end():].strip()
-
+        ref_word_str = ref_word
         choice = Choice(text, correct=True, is_shortans_fimb_multidd=True, question_hash_digest=self.hash_digest, md=self.md, reference_word=ref_word_str)
         prev_choice_set = self.choice_set_of_ref_word[ref_word_str]
         if choice.choice_xml in prev_choice_set:
@@ -722,7 +708,10 @@ class Quiz(object):
         line_comment_pattern = comment_patterns['line_comment']
         n_line_iter = iter(x for x in enumerate(string.splitlines()))
         n, line = next(n_line_iter, (0, None))
+        multi_lines_action = None
         lookahead = False
+        text_lines = None
+        in_multi_lines = False
         n_code_start = 0
         while line is not None:
             match = start_re.match(line)
@@ -757,36 +746,6 @@ class Quiz(object):
                         n_line_iter = itertools.chain(code_n_line_iter, n_line_iter)
                         n, line = next(n_line_iter, (0, None))
                         continue
-                elif action in multi_line:
-                    if start_patterns[action].endswith(':'):
-                        indent_expandtabs = None
-                    else:
-                        indent_expandtabs = ' '*len(line[:match.end()].expandtabs(4))
-                    text_lines = [text]
-                    n, line = next(n_line_iter, (0, None))
-                    line_expandtabs = line.expandtabs(4) if line is not None else None
-                    lookahead = True
-                    while (line is not None and
-                            (not line or line.isspace() or
-                                indent_expandtabs is None or line_expandtabs.startswith(indent_expandtabs))):
-                        if not line or line.isspace():
-                            if action in multi_para:
-                                text_lines.append('')
-                            else:
-                                break
-                        else:
-                            if indent_expandtabs is None:
-                                if not line.startswith(' '):
-                                    break
-                                indent_expandtabs = ' '*(len(line_expandtabs)-len(line_expandtabs.lstrip(' ')))
-                                if len(indent_expandtabs) < 2:
-                                    raise Text2qtiError(f'In {self.source_name} on line {n+1}:\nIndentation must be at least 2 spaces or 1 tab here')
-                            # The `rstrip()` prevents trailing double
-                            # spaces from becoming `<br />`.
-                            text_lines.append(line_expandtabs[len(indent_expandtabs):].rstrip())
-                        n, line = next(n_line_iter, (0, None))
-                        line_expandtabs = line.expandtabs(4) if line is not None else None
-                    text = '\n'.join(text_lines)
             elif line.startswith(line_comment_pattern):
                 n, line = next(n_line_iter, (0, None))
                 continue
@@ -807,6 +766,39 @@ class Quiz(object):
             else:
                 action = None
                 text = line
+
+            if in_multi_lines:
+                if action is None:
+                    # append the line into current lines array
+                    text_lines.append(line.rstrip())
+                    n, line = next(n_line_iter, (0, None))
+                    if line is not None:
+                        continue
+                    else:
+                        lookahead = True
+                        in_multi_lines = False
+                        text = '\n'.join(text_lines)
+                        action = multi_lines_action
+                else:
+                    lookahead = True
+                    in_multi_lines = False
+                    text = '\n'.join(text_lines)
+                    action = multi_lines_action
+                    multi_lines_action = None
+            else:
+                if action in multi_line:
+                    in_multi_lines = True
+                    multi_lines_action = action
+                    text_lines = [text]
+                    n, line = next(n_line_iter, (0, None))
+                    if line is not None:
+                            continue
+                    else:
+                        lookahead = True
+                        in_multi_lines = False
+                        text = '\n'.join(text_lines)
+                        action = multi_lines_action
+
             try:
                 parse_actions[action](text)
             except Text2qtiError as e:
@@ -1075,7 +1067,24 @@ class Quiz(object):
         last_question_or_delim = self.questions_and_delims[-1]
         if not isinstance(last_question_or_delim, Question):
             raise Text2qtiError('Cannot have an answer without a question')
-        last_question_or_delim.append_shortans_correct_choice(text)
+        ref_word_match = reference_word_re.match(text)
+        if ref_word_match is None:
+        # for using (( )) to mark reference words
+        #    raise Text2qtiError(f'The answer of fill_in_multiple_blanks question must has reference word surronded by (( ))')
+        #if len(ref_word_match.group(0)) <= 4 : # if reference word is empty: []
+            #raise Text2qtiError(f'The answer of fill_in_multiple_blanks question must has reference word surronded by [ ]')
+        # if there is no reference word, then this answer is a fill in the blank answer
+            last_question_or_delim.append_shortans_correct_choice(text)
+            return
+        if len(ref_word_match.group(0)) <= 2 : # if reference word is empty: []
+            raise Text2qtiError(f'Reference word cannot be empty in answer of fill_in_multiple_blanks question')
+        # for using (( )) to mark reference words
+        # ref_word_str = ref_word_match.group(0).lstrip('(').rstrip(')')
+        # for using [ ] to mark reference words
+        ref_word_str = ref_word_match.group(0).lstrip('[').rstrip(']')
+        text = text[ref_word_match.end():].strip()
+        last_question_or_delim.append_fimb_ans(text, ref_word_str)
+        
 
     def append_multans_correct_choice(self, text: str):
         if self._next_question_attr:
@@ -1188,16 +1197,6 @@ class Quiz(object):
             if match:
                 raise Text2qtiError(f'Missing content after "{match.group().strip()}"')
             raise Text2qtiError(f'Syntax error; unexpected text, or incorrect indentation for a wrapped paragraph:\n"{text}"')
-
-    def append_fimb_ans(self, text: str):
-        if self._next_question_attr:
-            raise Text2qtiError('Expected question; question title and/or points were set but not used')
-        if not self.questions_and_delims:
-            raise Text2qtiError('Cannot have a choice without a question')
-        last_question_or_delim = self.questions_and_delims[-1]
-        if not isinstance(last_question_or_delim, Question):
-            raise Text2qtiError('Cannot have a choice without a question')
-        last_question_or_delim.append_fimb_ans(text)
     
     def append_muldropd_correct_choice(self, text: str):
         if self._next_question_attr:
