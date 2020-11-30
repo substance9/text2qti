@@ -169,7 +169,10 @@ class Choice(object):
         # ID is based on hash of choice XML as well as question XML.  This
         # gives different IDs for identical choices in different questions.
         if is_shortans_fimb_multidd:
-            self.id = hashlib.blake2b(self.choice_xml.encode('utf8'), key=question_hash_digest).hexdigest()[:64]
+            # ID for short_ans_fimb_multidd is based on reference_word (unique per question) + choice XML as well as
+            # question XML because multiple drop downs with the same answers would have the same id otherwise
+            data = reference_word + self.choice_xml
+            self.id = hashlib.blake2b(data.encode('utf8'), key=question_hash_digest).hexdigest()[:64]
         else:
             self.id = hashlib.blake2b(self.choice_html_xml.encode('utf8'), key=question_hash_digest).hexdigest()[:64]
         self.md = md
