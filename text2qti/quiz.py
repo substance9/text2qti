@@ -262,7 +262,10 @@ class Question(object):
         self.correct_feedback_html_xml: Optional[str] = None
         self.incorrect_feedback_raw: Optional[str] = None
         self.incorrect_feedback_html_xml: Optional[str] = None
-        h = hashlib.blake2b(self.question_html_xml.encode('utf8'))
+        # Hash is based on title and question description so that a question with the same description
+        # can be asked multiple times in the same group
+        data = self.title_xml + self.question_html_xml
+        h = hashlib.blake2b(data.encode('utf8'))
         self.hash_digest = h.digest()
         self.id = h.hexdigest()[:64]
         self.md = md
@@ -990,9 +993,9 @@ class Quiz(object):
                             points=self._next_question_attr.get('points'),
                             md=self.md)
         self._next_question_attr = {}
-        if question.question_html_xml in self.question_set:
+        if question.id in self.question_set:
             raise Text2qtiError('Duplicate question')
-        self.question_set.add(question.question_html_xml)
+        self.question_set.add(question.id)
         self.questions_and_delims.append(question)
         if self._current_group is not None:
             self._current_group.append_question(question)
