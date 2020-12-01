@@ -181,9 +181,16 @@ GROUP
 pick: 2
 points per question: 3
 
+%<!-- Questions with the same descriptions can be repeated as long as they have a different title -->
+Title: Test1
 Q.  A question.
 *a) true
 b)  false
+
+Title: Test2
+Q.  A question.
+a) true
+*b)  false
 
 Q.  Which of the following are cloud service providers?
 [ ] EVGA
