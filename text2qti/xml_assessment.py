@@ -547,13 +547,13 @@ def assessment(*, quiz: Quiz, assessment_identifier: str, title_xml: str) -> str
             item_presentation_reference_words_list = []
             for ref_word in question.reference_words:
                 item_presentation_reference_word = ITEM_PRESENTATION_FIMB_REFERENCE_WORDS
-                ref_word_choice_set = set()
+                ref_word_choice_list = list()
                 for choice in question.choices:
                     if choice.reference_word == ref_word:
-                        ref_word_choice_set.add(choice)
+                        ref_word_choice_list.append(choice)
                 item_presentation_fimb_reference_words_choice = ITEM_PRESENTATION_FIMB_REFERENCE_WORDS_CHOICE
                 choices = '\n'.join(item_presentation_fimb_reference_words_choice.format(ident=f'text2qti_choice_{c.id}', choice_html_xml=c.choice_xml)
-                                                                for c in ref_word_choice_set)
+                                                                for c in ref_word_choice_list)
                 
                 item_presentation_reference_word = item_presentation_reference_word.format(ref_word=ref_word, choices=choices)
                 item_presentation_reference_words_list.append(item_presentation_reference_word)
