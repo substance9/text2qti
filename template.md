@@ -114,8 +114,13 @@ Q.  Write an essay.
 %<!-- % Use a sequence of three or more underscores at the next line of question description to mark-->
 %<!-- % this question as the essay question-->
 ____
-%<!-- % ********************Sample Question (Essay question)******************************** -->
-
+%<!-- % ********************Sample Question (File Upload)******************************** -->
+Title: (File Upload)
+Points: 10
+Q. Upload a file.
+^^^^
+%<!-- % Use a sequence of three or more carets at the next line of question description to mark-->
+%<!-- % this question as the file upload question-->
 
 %<!-- % ********************Sample Question (Fill-in-multiple-blanks Questions)******************************** -->
 Title: Fill in multiple blanks
