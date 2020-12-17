@@ -114,13 +114,18 @@ Q.  Write an essay.
 %<!-- % Use a sequence of three or more underscores at the next line of question description to mark-->
 %<!-- % this question as the essay question-->
 ____
+%<!-- % ********************Sample Question (Essay question)******************************** -->
+
+
 %<!-- % ********************Sample Question (File Upload)******************************** -->
 Title: (File Upload)
 Points: 10
 Q. Upload a file.
-^^^^
 %<!-- % Use a sequence of three or more carets at the next line of question description to mark-->
 %<!-- % this question as the file upload question-->
+^^^^
+%<!-- % ********************Sample Question (File Upload)******************************** -->
+
 
 %<!-- % ********************Sample Question (Fill-in-multiple-blanks Questions)******************************** -->
 Title: Fill in multiple blanks
@@ -178,6 +183,32 @@ What is the lowest address in the cache block, when the address 0x17634E is brou
 { }   [lowest_address]   0x01053F
 { }   [lowest_address]   0x010538
 %<!-- % ********************Sample Question (Multiple Dropdowns Questions)******************************** -->
+
+
+%<!-- % ********************Sample Question (Code Description)******************************** -->
+Title: Test
+Points: 1
+Q. Implement the function <code>compute()</code> in MIPS assembly language) 
+Functions <code>process1()</code>, <code>process2()</code> and <code>process3()</code> are functions that your <code>compute()</code> function must call. 
+Your code must implement the register conventions taught in class.
+
+%<!-- % Wrap code block inside a <pre> tag to maintain formatting -->
+<pre>
+int compute(int a, int b) {
+
+    (int x, int y) = process1(b, a);
+
+    int z = process2(y, b);
+
+    return process3(x, y, z, a);
+    
+}
+</pre>
+
+<b>Upload a SINGLE IMAGE of your written code or a txt/asm file</b>
+^^^
+%<!-- % ********************Sample Question (Code Description)******************************** -->
+
 
 %<!-- % ********************Using Question Group ***************************************************** -->
 %<!-- Use keyword "GROUP" to mark the start of a group and "END_GROUP" to mark the end of a group -->
