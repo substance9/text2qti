@@ -23,6 +23,7 @@ import re
 import shlex
 import subprocess
 import tempfile
+from .utils import remove_pre_tags
 from typing import Dict, List, Optional, Set, Union
 from .config import Config
 from .err import Text2qtiError
@@ -219,7 +220,7 @@ class Question(object):
         self.reference_words_raw = None
         self.reference_words = None
         self.num_reference_words = 0
-        reference_words_raw = question_has_reference_words_re.findall(text)
+        reference_words_raw = question_has_reference_words_re.findall(remove_pre_tags(text))
         if reference_words_raw is not None:
             self.reference_words = set()
             for ref_word_raw in reference_words_raw:
